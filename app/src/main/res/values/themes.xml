@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
+
+    <!-- Style for DatePicker and TimePicker dialogs to ensure excellent text contrast -->
+    <style name="CustomDatePickerTheme" parent="android:Theme.DeviceDefault.Light.Dialog.Alert">
+        <item name="android:colorPrimary">@color/purple_500</item>
+        <item name="android:colorPrimaryDark">@color/purple_700</item>
+        <item name="android:colorAccent">@color/purple_500</item>
+    </style>
+</resources>
