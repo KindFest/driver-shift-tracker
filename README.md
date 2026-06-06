@@ -1,8 +1,6 @@
-# 🚛 Driver Shift Tracker (Трекер смен водителя)
+# 🚛 Driver Shift Tracker
 
-**Android-приложение для учёта рабочих смен водителей-международников** с контролем соответствия регламенту ЕС № 561/2006.
-
-> _An Android app for tracking driver shifts and monitoring EU Regulation 561/2006 compliance._
+**An Android app for tracking work shifts of long-haul drivers** with EU Regulation 561/2006 compliance monitoring.
 
 [![Android](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
@@ -12,109 +10,109 @@
 
 ---
 
-## 📋 Описание
+## 📋 About
 
-Driver Shift Tracker помогает водителям-международникам вести ежедневный журнал рабочих смен, контролировать время вождения и отдыха, а также формировать отчёты для диспетчера. Приложение автоматически проверяет соблюдение основных норм регламента ЕС № 561/2006 и предупреждает о возможных нарушениях.
+Driver Shift Tracker helps long-haul drivers maintain a daily work shift log, monitor driving and rest times, and generate reports for dispatchers. The app automatically checks compliance with the key rules of EU Regulation 561/2006 and warns about potential violations.
 
-## ✨ Возможности
+## ✨ Features
 
-### 📊 Дашборд
-- Время начала следующей смены с учётом **обычного** (11 ч) и **сокращённого** (9 ч) отдыха — отображается разными цветами
-- Недельная сводка: общее время работы, вождения, расходы
-- Визуальные индикаторы превышения лимитов (красный/зелёный)
+### 📊 Dashboard
+- Next shift start time calculated with **regular** (11 h) and **reduced** (9 h) rest — displayed in different colors
+- Weekly summary: total work hours, driving hours, expenses
+- Visual limit indicators (red / green)
 
-### 📝 Журнал смен
-- Добавление, редактирование и удаление записей смен
-- **Поиск по дате** и **фильтрация по диапазону дат**
-- Автосохранение черновика при закрытии формы
-- Автозаполнение на основе предыдущей смены
+### 📝 Shift Log
+- Add, edit, and delete shift records
+- **Search by date** and **filter by date range**
+- Auto-save draft when the form is closed
+- Auto-fill based on the previous shift
 
-### 📈 Отчёты
-- Генерация текстовых отчётов за произвольный период
-- Копирование отчёта в буфер обмена для отправки диспетчеру
-- Понедельная разбивка с суммами часов и расходов
+### 📈 Reports
+- Generate text reports for any custom period
+- Copy report to clipboard to send to a dispatcher
+- Week-by-week breakdown with hour and expense totals
 
-### ⚙️ Настройки
-- **Профиль**: изменение имени водителя
-- **Язык**: русский 🇷🇺 / английский 🇬🇧
-- **Режим работы**:
-  - _Расширенный_ — ввод времени обычной смены + тахографа
-  - _Сокращённый_ — только время по тахографу
-- **Нормативные документы**: справочник регламента ЕС № 561/2006
-- **О программе**: версия и номер сборки
+### ⚙️ Settings
+- **Profile**: change driver name
+- **Language**: Russian 🇷🇺 / English 🇬🇧
+- **Work mode**:
+  - _Extended_ — enter both regular shift and tachograph times
+  - _Simplified_ — tachograph times only
+- **Regulations**: EU Regulation 561/2006 reference guide
+- **About**: version and build number
 
-### ✅ Контроль соблюдения регламента ЕС
-| Правило | Ограничение |
-|---------|------------|
-| Максимальная смена по тахографу | ≤ 13 часов (не более 3 раз/нед.) |
-| Максимальное вождение в день | ≤ 9 часов (продление до 10 ч не более 2 раз/нед.) |
-| Сокращённый ежедневный отдых | < 11 часов (не более 3 раз/нед.) |
+### ✅ EU Regulation Compliance Checks
+| Rule | Limit |
+|------|-------|
+| Maximum tachograph shift | ≤ 13 hours (max 3 times/week) |
+| Maximum daily driving | ≤ 9 hours (extension to 10 h max 2 times/week) |
+| Reduced daily rest | < 11 hours (max 3 times/week) |
 
 ---
 
-## 🏗️ Архитектура
+## 🏗️ Architecture
 
 ```
 app/src/main/java/com/example/
-├── MainActivity.kt          # Единственное Activity, весь UI на Jetpack Compose
+├── MainActivity.kt              # Single Activity, entire UI in Jetpack Compose
 ├── data/
-│   ├── Database.kt          # Room БД: DriverEntity, ShiftEntity, DAO
-│   └── Repository.kt        # Репозиторий данных
+│   ├── Database.kt              # Room DB: DriverEntity, ShiftEntity, DAOs
+│   └── Repository.kt            # Data repository
 ├── domain/
-│   └── ComplianceCalculator.kt  # Бизнес-логика проверки регламента
+│   └── ComplianceCalculator.kt  # Business logic for regulation checks
 └── ui/
-    ├── MainViewModel.kt     # MVVM ViewModel, управление состоянием
-    └── Localization.kt      # Словарь переводов (RU/EN)
+    ├── MainViewModel.kt         # MVVM ViewModel, state management
+    └── Localization.kt          # Translation dictionary (RU/EN)
 ```
 
-### Стек технологий
+### Tech Stack
 
-| Компонент | Технология |
+| Component | Technology |
 |-----------|-----------|
-| Язык | Kotlin 2.0 |
+| Language | Kotlin 2.0 |
 | UI | Jetpack Compose + Material 3 |
-| Архитектура | MVVM (ViewModel + StateFlow) |
-| База данных | Room (SQLite) |
-| Асинхронность | Kotlin Coroutines + Flow |
-| Сеть | Retrofit + OkHttp + Moshi |
-| Сборка | Gradle (Kotlin DSL) |
-| Тесты | JUnit + Robolectric + Roborazzi |
+| Architecture | MVVM (ViewModel + StateFlow) |
+| Database | Room (SQLite) |
+| Async | Kotlin Coroutines + Flow |
+| Networking | Retrofit + OkHttp + Moshi |
+| Build | Gradle (Kotlin DSL) |
+| Testing | JUnit + Robolectric + Roborazzi |
 
 ---
 
-## 🚀 Сборка и запуск
+## 🚀 Build & Run
 
-### Требования
-- **Android Studio** Ladybug (2024.2) или новее
-- **JDK 11+** (встроен в Android Studio)
-- **Android SDK** с compileSdk 36
+### Requirements
+- **Android Studio** Ladybug (2024.2) or newer
+- **JDK 11+** (bundled with Android Studio)
+- **Android SDK** with compileSdk 36
 
-### Шаги
+### Steps
 
-1. **Клонировать репозиторий**
+1. **Clone the repository**
    ```bash
    git clone https://github.com/KindFest/driver-shift-tracker.git
    cd driver-shift-tracker
    ```
 
-2. **Открыть в Android Studio**
-   - File → Open → выбрать папку проекта
-   - Дождаться синхронизации Gradle
+2. **Open in Android Studio**
+   - File → Open → select the project folder
+   - Wait for Gradle sync to complete
 
-3. **Запустить**
-   - Выбрать устройство или эмулятор
-   - Нажать ▶️ Run
+3. **Run**
+   - Select a device or emulator
+   - Press ▶️ Run
 
-### Сборка APK из командной строки
+### Build APK from the Command Line
 
 ```bash
 # Debug APK
 ./gradlew assembleDebug
 
-# APK будет в: app/build/outputs/apk/debug/app-debug.apk
+# The APK will be at: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-### Переменные окружения (для release-сборки)
+### Environment Variables (for release builds)
 
 ```bash
 KEYSTORE_PATH=/path/to/my-upload-key.jks
@@ -124,33 +122,33 @@ KEY_PASSWORD=your_key_password
 
 ---
 
-## 📱 Совместимость
+## 📱 Compatibility
 
-- **Минимальная версия Android**: 7.0 (API 24)
-- **Целевая версия Android**: 14 (API 36)
-- **Поддерживаемые языки**: Русский, English
-
----
-
-## 🗺️ Планы развития
-
-- [ ] Ограничение 56 часов вождения за неделю
-- [ ] Ограничение 90 часов вождения за 2 недели (скользящие)
-- [ ] Контроль перерыва 45 мин после 4.5 часов вождения
-- [ ] Еженедельный отдых ≥ 45 часов (сокращённый ≥ 24 ч)
-- [ ] Максимум 6 суточных периодов вождения между еженедельными отдыхами
-- [ ] Экспорт отчётов в PDF
-- [ ] Уведомления о приближении к лимитам
-- [ ] Резервное копирование данных в облако
+- **Minimum Android version**: 7.0 (API 24)
+- **Target Android version**: 14 (API 36)
+- **Supported languages**: Russian, English
 
 ---
 
-## 📄 Лицензия
+## 🗺️ Roadmap
 
-Данный проект является частным (private). Все права защищены.
+- [ ] Weekly driving limit of 56 hours
+- [ ] Bi-weekly driving limit of 90 hours (rolling)
+- [ ] 45-minute break after 4.5 hours of continuous driving
+- [ ] Weekly rest ≥ 45 hours (reduced ≥ 24 h)
+- [ ] Maximum of 6 daily driving periods between weekly rests
+- [ ] Export reports to PDF
+- [ ] Notifications when approaching limits
+- [ ] Cloud backup
+
+---
+
+## 📄 License
+
+This project is private. All rights reserved.
 
 ---
 
 <p align="center">
-  <sub>Сделано с ❤️ для водителей-международников</sub>
+  <sub>Made with ❤️ for long-haul drivers</sub>
 </p>
