@@ -3,10 +3,10 @@
 
     <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
 
-    <!-- Style for DatePicker and TimePicker dialogs to ensure excellent text contrast -->
+    <!-- Style for DatePicker and TimePicker dialogs with sunset orange accent -->
     <style name="CustomDatePickerTheme" parent="android:Theme.DeviceDefault.Light.Dialog.Alert">
-        <item name="android:colorPrimary">@color/purple_500</item>
-        <item name="android:colorPrimaryDark">@color/purple_700</item>
-        <item name="android:colorAccent">@color/purple_500</item>
+        <item name="android:colorPrimary">@color/sunset_orange</item>
+        <item name="android:colorPrimaryDark">@color/sunset_orange_dark</item>
+        <item name="android:colorAccent">@color/sunset_orange</item>
     </style>
 </resources>
