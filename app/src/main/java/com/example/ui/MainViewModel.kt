@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -43,7 +44,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Tab navigation state
     enum class Tab {
-        DASHBOARD, SHIFTS, REPORTS, PROFILE
+        DASHBOARD, SHIFTS, REPORTS, SETTINGS
     }
 
     private val _activeTab = MutableStateFlow(Tab.DASHBOARD)
@@ -51,6 +52,55 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setActiveTab(tab: Tab) {
         _activeTab.value = tab
+    }
+
+    // Language and Application mode states stored in SharedPreferences
+    enum class AppMode {
+        EXTENDED, SHORTENED
+    }
+
+    private val prefs = application.getSharedPreferences("driver_prefs", android.content.Context.MODE_PRIVATE)
+
+    private val _appLanguage = MutableStateFlow(prefs.getString("app_language", "ru") ?: "ru")
+    val appLanguage: StateFlow<String> = _appLanguage.asStateFlow()
+
+    private val _appMode = MutableStateFlow(
+        try {
+            AppMode.valueOf(prefs.getString("app_mode", AppMode.EXTENDED.name) ?: AppMode.EXTENDED.name)
+        } catch (e: Exception) {
+            AppMode.EXTENDED
+        }
+    )
+    val appMode: StateFlow<AppMode> = _appMode.asStateFlow()
+
+    fun setAppLanguage(lang: String) {
+        _appLanguage.value = lang
+        prefs.edit().putString("app_language", lang).apply()
+    }
+
+    fun setAppMode(mode: AppMode) {
+        _appMode.value = mode
+        prefs.edit().putString("app_mode", mode.name).apply()
+    }
+
+    // Shifts filters
+    private val _shiftFilterStartDate = MutableStateFlow<LocalDate?>(null)
+    val shiftFilterStartDate: StateFlow<LocalDate?> = _shiftFilterStartDate.asStateFlow()
+
+    private val _shiftFilterEndDate = MutableStateFlow<LocalDate?>(null)
+    val shiftFilterEndDate: StateFlow<LocalDate?> = _shiftFilterEndDate.asStateFlow()
+
+    fun setShiftFilterStartDate(date: LocalDate?) {
+        _shiftFilterStartDate.value = date
+    }
+
+    fun setShiftFilterEndDate(date: LocalDate?) {
+        _shiftFilterEndDate.value = date
+    }
+
+    fun clearShiftFilters() {
+        _shiftFilterStartDate.value = null
+        _shiftFilterEndDate.value = null
     }
 
     // Driver/Profile states
@@ -125,12 +175,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             initialValue = emptyList()
         )
 
+    // Filtered shifts based on date selection
+    val filteredShifts: StateFlow<List<ShiftRecord>> = combine(
+        allShifts,
+        shiftFilterStartDate,
+        shiftFilterEndDate
+    ) { shifts, start, end ->
+        shifts.filter { record ->
+            val date = record.workDate
+            val matchStart = start == null || !date.isBefore(start)
+            val matchEnd = end == null || !date.isAfter(end)
+            matchStart && matchEnd
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     // Compute weekly compliance rules for the selected anchor week
     val weeklyCompliance: StateFlow<WeeklyCompliance?> = combine(
         selectedWeekAnchor,
         allShifts
     ) { anchor, shifts ->
         ComplianceCalculator.calculateWeeklyCompliance(anchor, shifts)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    // Next shift start time predictions based on the latest shift end
+    val nextShiftStartRegular: StateFlow<java.time.LocalDateTime?> = allShifts.map { shifts ->
+        shifts.firstOrNull()?.tachoEndDt?.plusHours(11)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    val nextShiftStartReduced: StateFlow<java.time.LocalDateTime?> = allShifts.map { shifts ->
+        shifts.firstOrNull()?.tachoEndDt?.plusHours(9)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -187,12 +272,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isFormOpen = MutableStateFlow(false)
     val isFormOpen: StateFlow<Boolean> = _isFormOpen.asStateFlow()
 
+    private fun saveDraft() {
+        if (_editingShiftId.value == null) {
+            prefs.edit()
+                .putString("draft_work_date", _formWorkDate.value.toString())
+                .putString("draft_shift_start", _formShiftStart.value.toString())
+                .putString("draft_tacho_start", _formTachoStart.value.toString())
+                .putBoolean("has_draft", true)
+                .apply()
+        }
+    }
+
+    private fun clearDraft() {
+        prefs.edit()
+            .remove("draft_work_date")
+            .remove("draft_shift_start")
+            .remove("draft_tacho_start")
+            .remove("has_draft")
+            .apply()
+    }
+
     fun openNewShiftForm() {
         val lastShift = allShifts.value.firstOrNull()
         _editingShiftId.value = null
-        _formWorkDate.value = lastShift?.workDate?.plusDays(1) ?: LocalDate.now()
-        _formShiftStart.value = lastShift?.shiftStart ?: LocalTime.of(7, 30)
-        _formTachoStart.value = lastShift?.tachoStart ?: LocalTime.of(7, 30)
+
+        val hasDraft = prefs.getBoolean("has_draft", false)
+        if (hasDraft) {
+            val dDate = prefs.getString("draft_work_date", null)?.let { try { LocalDate.parse(it) } catch(e: Exception) { null } }
+            val dShift = prefs.getString("draft_shift_start", null)?.let { try { LocalTime.parse(it) } catch(e: Exception) { null } }
+            val dTacho = prefs.getString("draft_tacho_start", null)?.let { try { LocalTime.parse(it) } catch(e: Exception) { null } }
+
+            _formWorkDate.value = dDate ?: (lastShift?.workDate?.plusDays(1) ?: LocalDate.now())
+            _formShiftStart.value = dShift ?: (lastShift?.shiftStart ?: LocalTime.of(7, 30))
+            _formTachoStart.value = dTacho ?: (lastShift?.tachoStart ?: LocalTime.of(7, 30))
+        } else {
+            _formWorkDate.value = lastShift?.workDate?.plusDays(1) ?: LocalDate.now()
+            _formShiftStart.value = lastShift?.shiftStart ?: LocalTime.of(7, 30)
+            _formTachoStart.value = lastShift?.tachoStart ?: LocalTime.of(7, 30)
+        }
+
         _formShiftEnd.value = lastShift?.shiftEnd ?: LocalTime.of(17, 30)
         _formTachoEnd.value = lastShift?.tachoEnd ?: LocalTime.of(17, 30)
         
@@ -235,9 +353,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _formValidationError.value = null
     }
 
-    fun setFormWorkDate(date: LocalDate) { _formWorkDate.value = date }
-    fun setFormShiftStart(time: LocalTime) { _formShiftStart.value = time }
-    fun setFormTachoStart(time: LocalTime) { _formTachoStart.value = time }
+    fun setFormWorkDate(date: LocalDate) { _formWorkDate.value = date; saveDraft() }
+    fun setFormShiftStart(time: LocalTime) { _formShiftStart.value = time; saveDraft() }
+    fun setFormTachoStart(time: LocalTime) { _formTachoStart.value = time; saveDraft() }
     fun setFormShiftEnd(time: LocalTime) { _formShiftEnd.value = time }
     fun setFormTachoEnd(time: LocalTime) { _formTachoEnd.value = time }
     fun setFormDrivingHoursText(text: String) { _formDrivingHoursText.value = text }
@@ -261,13 +379,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
+        // If shortened mode, set regular shift start/end times equal to tacho start/end times
+        val finalShiftStart = if (appMode.value == AppMode.SHORTENED) _formTachoStart.value else _formShiftStart.value
+        val finalShiftEnd = if (appMode.value == AppMode.SHORTENED) _formTachoEnd.value else _formShiftEnd.value
+
         val entity = ShiftEntity(
             id = _editingShiftId.value ?: 0,
             driverId = driver.id,
             workDate = _formWorkDate.value.toString(),
-            shiftStart = "%02d:%02d".format(_formShiftStart.value.hour, _formShiftStart.value.minute),
+            shiftStart = "%02d:%02d".format(finalShiftStart.hour, finalShiftStart.minute),
             tachoStart = "%02d:%02d".format(_formTachoStart.value.hour, _formTachoStart.value.minute),
-            shiftEnd = "%02d:%02d".format(_formShiftEnd.value.hour, _formShiftEnd.value.minute),
+            shiftEnd = "%02d:%02d".format(finalShiftEnd.hour, finalShiftEnd.minute),
             tachoEnd = "%02d:%02d".format(_formTachoEnd.value.hour, _formTachoEnd.value.minute),
             drivingHours = drivingHoursVal.toString(),
             nightStop = if (_formNightStop.value) 1 else 0,
@@ -277,6 +399,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             if (_editingShiftId.value == null) {
                 repository.saveShift(entity)
+                clearDraft()
             } else {
                 repository.updateShift(entity)
             }

@@ -27,7 +27,8 @@ class GreetingScreenshotTest {
           title = "Вождение > 9ч",
           count = 1,
           limit = 2,
-          exceeded = false
+          exceeded = false,
+          lang = "ru"
         )
       } 
     }
